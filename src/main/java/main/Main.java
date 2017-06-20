@@ -1,3 +1,4 @@
+package main;
 import utils.ArgumentParser;
 
 public class Main {
