@@ -1,5 +1,8 @@
 package main;
 
+import model.BmpImage;
+import utils.RandomTable;
+
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.IntStream;
@@ -20,8 +23,9 @@ public class SecretShare {
    * @param table R table of the paper
    */
   public static int MODULO = 257;
+  public static long DEFAULT_SEED = 251;
 
-  public static int[] randomize(int[] image, int[] table) throws IllegalArgumentException {
+  public static int[] randomize(final int[] image, final int[] table) throws IllegalArgumentException {
     if (image.length != table.length) {
       throw new IllegalArgumentException("Image size and table size do not match");
     }
@@ -29,6 +33,14 @@ public class SecretShare {
     int[] randomized = new int[image.length];
     IntStream.range(0, image.length).forEach(i -> randomized[i] = image[i] ^ table[i]);
     return randomized;
+  }
+
+  public static int[] randomize(final int[] image) {
+    return randomize(image, RandomTable.createTable(image.length, DEFAULT_SEED));
+  }
+
+  public static int[] randomize(final int[] image, final long seed) {
+    return randomize(image, RandomTable.createTable(image.length, seed));
   }
 
   /**
@@ -39,7 +51,7 @@ public class SecretShare {
    * @param n
    * @param randomized Q randomized image of the paper
    */
-  public static int[][] generateShadows(int r, int n, int[] randomized) {
+  public static int[][] generateShadows(final int r, final int n, final int[] randomized) {
     if ((randomized.length / r) * r != randomized.length) {
       throw new IllegalArgumentException("Q image must be multiple of r.");
     }
@@ -74,24 +86,28 @@ public class SecretShare {
   }
   
   public static int[] getRandomizedImage(List<Shadow> originalShadows, int r) {
-	  if (originalShadows.size() < r) {
-		  throw new IllegalArgumentException("Not enough shadows.");
-	  }
-	  List<Shadow> shadows = originalShadows.subList(0, r);
-	  int[] image = new int[shadows.get(0).size() * r];
-	  for (int i = 0; i < shadows.get(0).size(); i++) {
-		  int[][] matrix = new int[shadows.size()][r + 1];
-		  for (int j = 0; j < shadows.size(); j++) {
-			  final Shadow shadow = shadows.get(j);
-			  int[] coeffs = IntStream.range(0, r).map(k -> (int) Math.pow(shadow.getNumber(), k)).toArray();
-			  coeffs = Arrays.copyOf(coeffs, coeffs.length + 1);
-			  coeffs[coeffs.length -1] = shadow.getAt(i);
-			  matrix[j] = coeffs;
-		  }
-		  int[] answer = LinearModularEquationSolver.solve(matrix, MODULO);
-		  System.arraycopy(answer, 0, image, i * r, answer.length);
-	  }
-	  return image;
+    if (originalShadows.size() < r) {
+      throw new IllegalArgumentException("Not enough shadows.");
+    }
+    List<Shadow> shadows = originalShadows.subList(0, r);
+    int[] image = new int[shadows.get(0).size() * r];
+    for (int i = 0; i < shadows.get(0).size(); i++) {
+      int[][] matrix = new int[shadows.size()][r + 1];
+      for (int j = 0; j < shadows.size(); j++) {
+        final Shadow shadow = shadows.get(j);
+        int[] coeffs = IntStream.range(0, r).map(k -> (int) Math.pow(shadow.getNumber(), k)).toArray();
+        coeffs = Arrays.copyOf(coeffs, coeffs.length + 1);
+        coeffs[coeffs.length -1] = shadow.getAt(i);
+        matrix[j] = coeffs;
+      }
+      int[] answer = LinearModularEquationSolver.solve(matrix, MODULO);
+      System.arraycopy(answer, 0, image, i * r, answer.length);
+    }
+    return image;
+  }
+
+  public static int[][] generateShadowsFromRegularImage(final int r, final int n, final BmpImage image) {
+    return generateShadows(r, n, randomize(image.getPixels()));
   }
 
   private static int[] calculateSection(final int[] array, int from, int to) {
