@@ -18,6 +18,20 @@ jar {
     }
 }
 
+sourceSets {
+    main {
+        java {
+            srcDir 'src/main/java'
+        }
+    }
+    
+    test {
+        java {
+            srcDir 'src/test/java'
+        }
+    }
+}
+
 dependencies {
     compile group: 'com.google.code.findbugs', name: 'annotations', version: '3.0.1'
     compile group: 'commons-cli', name: 'commons-cli', version: '1.4'

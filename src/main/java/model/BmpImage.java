@@ -3,14 +3,19 @@ package model;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
+/**
+ * This class is mutable, so be careful and remember to clone when necessary.
+ */
 public class BmpImage {
 
+	private byte[] arr;
 	private int size;
 	private int width;
 	private int height;
 	private int offset;
 	
 	public BmpImage(byte[] arr) {
+		this.arr = arr;
 		int headerSize = getInt(arr, 14, 18);
 		if (headerSize <= 12) {
 			throw new IllegalArgumentException("Invalid BMP. Header size too small.");
@@ -26,6 +31,17 @@ public class BmpImage {
 		this.offset = getInt(arr, 10, 14);
 		this.width = getInt(arr, 18, 22);
 		this.height = getInt(arr, 22, 26);
+	}
+	
+	/**
+	 * This WILL change the object.
+	 */
+	public void setByte(int index, int value) {
+		arr[index] = (byte) value;
+	}
+	
+	public int getByte(int index) {
+		return arr[index] & 0xFF;
 	}
 	
 	private int getInt(byte[] arr, int start, int end) {
@@ -50,6 +66,10 @@ public class BmpImage {
 
 	public int getOffset() {
 		return offset;
+	}
+	
+	public BmpImage clone() {
+		return new BmpImage(Arrays.copyOf(arr, arr.length));
 	}
 
 	@Override
