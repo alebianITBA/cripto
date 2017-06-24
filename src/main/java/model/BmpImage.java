@@ -63,7 +63,7 @@ public class BmpImage {
     int[] pixels = new int[this.arr.length - getOffset()];
     int idx = 0;
     for (int i = getOffset(); i < this.arr.length; i++) {
-      pixels[idx++] = this.arr[i];
+      pixels[idx++] = this.arr[i] & 0xff; // Mask hack to transform signed bytes into unsigned
     }
     return pixels;
   }
