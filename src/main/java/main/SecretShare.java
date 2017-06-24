@@ -88,8 +88,6 @@ public class SecretShare {
 			  coeffs[coeffs.length -1] = shadow.getAt(i);
 			  matrix[j] = coeffs;
 		  }
-		  Arrays.stream(matrix).forEach(row -> System.out.println(Arrays.toString(row)));
-		  System.out.println();
 		  int[] answer = LinearModularEquationSolver.solve(matrix, MODULO);
 		  System.arraycopy(answer, 0, image, i * r, answer.length);
 	  }
