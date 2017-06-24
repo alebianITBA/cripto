@@ -1,6 +1,11 @@
 package main;
 
 import java.util.Arrays;
+import java.util.List;
+import java.util.stream.IntStream;
+
+import utils.LinearModularEquationSolver;
+import model.Shadow;
 
 /**
  * Implementation of the Kuang-Shyr Wu and Tsung-Ming Lo (r, n) secret image share algorithm
@@ -70,6 +75,29 @@ public class SecretShare {
     }
 
     return shadows;
+  }
+  
+  public static int[] getRandomizedImage(List<Shadow> originalShadows, int r) {
+	  if (originalShadows.size() < r) {
+		  throw new IllegalArgumentException("Not enough shadows.");
+	  }
+	  List<Shadow> shadows = originalShadows.subList(0, r);
+	  int[] image = new int[shadows.get(0).size() * r];
+	  for (int i = 0; i < shadows.get(0).size(); i++) {
+		  int[][] matrix = new int[shadows.size()][r + 1];
+		  for (int j = 0; j < shadows.size(); j++) {
+			  final Shadow shadow = shadows.get(j);
+			  int[] coeffs = IntStream.range(0, r).map(k -> (int) Math.pow(shadow.getNumber(), k)).toArray();
+			  coeffs = Arrays.copyOf(coeffs, coeffs.length + 1);
+			  coeffs[coeffs.length -1] = shadow.getAt(i);
+			  matrix[j] = coeffs;
+		  }
+		  Arrays.stream(matrix).forEach(row -> System.out.println(Arrays.toString(row)));
+		  System.out.println();
+		  int[] answer = LinearModularEquationSolver.solve(matrix, MODULO);
+		  System.arraycopy(answer, 0, image, i * r, answer.length);
+	  }
+	  return image;
   }
 
   private static int evaluate(int[] coefficients, int x) {

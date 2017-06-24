@@ -1,6 +1,7 @@
 import static org.junit.Assert.assertArrayEquals;
-
 import main.SecretShare;
+import model.Shadow;
+
 import org.junit.Test;
 
 public class SecretShareTest {
@@ -78,5 +79,14 @@ public class SecretShareTest {
     assertArrayEquals(shadowsComplex[5], test[5]);
     assertArrayEquals(shadowsComplex[6], test[6]);
     assertArrayEquals(shadowsComplex[7], test[7]);
+  }
+  
+  @Test
+  public void decipher() {
+	  assertArrayEquals(
+			  SecretShare.getRandomizedImage(
+					  Shadow.fromArrays(SecretShare.generateShadows(
+							  8, 8, randomizedImage)), 8),
+			  randomizedImage);
   }
 }
