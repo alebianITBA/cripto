@@ -33,7 +33,7 @@ public class Main {
     try {
       BmpImage secret = BmpImage.readImage(parser.getSecretFile());
       int[][] shadows = SecretShare.generateShadowsFromRegularImage(parser.getMinimumShadows(), parser.getTotalShadows(), secret);
-      int[] originalPixels = secret.getPixels();
+      int[] originalPixels = SecretShare.randomize(secret.getPixels());
       int[] recoveredPixels = SecretShare.getRandomizedImage(Shadow.fromArrays(shadows), parser.getMinimumShadows());
       for (int i = 0; i < originalPixels.length; i++) {
         if (originalPixels[i] != recoveredPixels[i]) {
