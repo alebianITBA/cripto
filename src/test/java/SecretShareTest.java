@@ -4,6 +4,8 @@ import model.Shadow;
 
 import org.junit.Test;
 
+import java.util.stream.IntStream;
+
 public class SecretShareTest {
   int[] table = {187, 242, 13, 255, 165};
   int[] image = {1, 1, 1, 1, 1};
@@ -57,36 +59,22 @@ public class SecretShareTest {
   public void generateShadows() {
     int[][] test = SecretShare.generateShadows(8, 8, randomizedImage);
 
-    assertArrayEquals(shadows[0], test[0]);
-    assertArrayEquals(shadows[1], test[1]);
-    assertArrayEquals(shadows[2], test[2]);
-    assertArrayEquals(shadows[3], test[3]);
-    assertArrayEquals(shadows[4], test[4]);
-    assertArrayEquals(shadows[5], test[5]);
-    assertArrayEquals(shadows[6], test[6]);
-    assertArrayEquals(shadows[7], test[7]);
+    IntStream.range(0, shadows.length).forEach(i -> assertArrayEquals(shadows[i], test[i]));
   }
   
   @Test
   public void generateShadowsWith256() {
     int[][] test = SecretShare.generateShadows(8, 8, randomizedComplexImage);
 
-    assertArrayEquals(shadowsComplex[0], test[0]);
-    assertArrayEquals(shadowsComplex[1], test[1]);
-    assertArrayEquals(shadowsComplex[2], test[2]);
-    assertArrayEquals(shadowsComplex[3], test[3]);
-    assertArrayEquals(shadowsComplex[4], test[4]);
-    assertArrayEquals(shadowsComplex[5], test[5]);
-    assertArrayEquals(shadowsComplex[6], test[6]);
-    assertArrayEquals(shadowsComplex[7], test[7]);
+    IntStream.range(0, shadowsComplex.length).forEach(i -> assertArrayEquals(shadowsComplex[i], test[i]));
   }
   
   @Test
   public void decipher() {
-	  assertArrayEquals(
-			  SecretShare.getRandomizedImage(
-					  Shadow.fromArrays(SecretShare.generateShadows(
-							  8, 8, randomizedImage)), 8),
-			  randomizedImage);
+    assertArrayEquals(
+      SecretShare.getRandomizedImage(
+        Shadow.fromArrays(SecretShare.generateShadows(
+         8, 8, randomizedImage)), 8),
+          randomizedImage);
   }
 }

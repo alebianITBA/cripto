@@ -1,8 +1,10 @@
 package main;
 import model.BmpImage;
+import model.Shadow;
 import utils.ArgumentParser;
 
 import java.io.IOException;
+import java.util.List;
 
 public class Main {
   public static void main(String[] args) {
@@ -33,6 +35,13 @@ public class Main {
       int[][] shadows = SecretShare.generateShadowsFromRegularImage(parser.getMinimumShadows(), parser.getTotalShadows(), secret);
       for (int i = 0; i < shadows[0].length; i++) {
         System.out.println(shadows[0][i]);
+      }
+      int[] originalPixels = secret.getPixels();
+      int[] recoveredPixels = SecretShare.getRandomizedImage(Shadow.fromArrays(shadows), parser.getMinimumShadows());
+      for (int i = 0; i < originalPixels.length; i++) {
+        if (originalPixels[i] != recoveredPixels[i]) {
+          System.out.println(String.format("Fallo pixel %d, original: %d, recovered: %d", i, originalPixels[i], recoveredPixels[i]));
+        }
       }
     } catch (IOException e) {
       e.printStackTrace();
