@@ -1,10 +1,15 @@
 package model;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * This class is mutable, so be careful and remember to clone when necessary.
@@ -38,6 +43,27 @@ public class BmpImage {
   public static BmpImage readImage(final Path imagePath) throws IOException {
     byte[] arr = Files.readAllBytes(imagePath);
     return new BmpImage(arr);
+  }
+
+  public static List<BmpImage> fromDirectory(final String directoryName) throws IOException {
+    final File directory = new File(directoryName);
+    final File[] list = directory.listFiles();
+
+    Objects.requireNonNull(list);
+
+    return Arrays.stream(list)
+            .filter(file -> file.getName().endsWith("bmp"))
+            .map(File::getName)
+            .map(Paths::get)
+            .map(fileName -> {
+              try {
+                return BmpImage.readImage(fileName);
+              } catch (IOException e) {
+                return null;
+              }
+            })
+            .filter(Objects::nonNull)
+            .collect(Collectors.toList());
   }
 
   /**
