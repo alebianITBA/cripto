@@ -1,13 +1,17 @@
 # Build
 
-You need to have installed [gradle](https://gradle.org/).
-
-To build the executable jar file, run:
-
+If you have gradle already installed just run:
 ```
 gradle shadow
 ```
-It'll generate a jar file inside `build/libs` called `secret-image-sharing-scheme-1.0-SNAPSHOT-all.jar`.
+
+If not, go to the root of this project and run:
+```
+./gradlew shadow
+```
+This will install gradle locally and execute it.
+
+Both options will generate a jar file inside `build/libs` called `secret-image-sharing-scheme-1.0-SNAPSHOT-all.jar`.
 
 Move it to the location of your choice and then run it with the needed arguments..
 
