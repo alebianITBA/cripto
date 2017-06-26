@@ -23,9 +23,16 @@ public class Main {
 		int n = parser.getTotalShadows();
 		Path secretPath = parser.getSecretPath();
 		boolean useWH = parser.useWH();
+		if (r != 8) {
+			useWH = true;
+		}
 
 		List<BmpImage> shadowHolders = getShadowHolders(parser.getDir(),
 				parser.getOperation() == Operation.DISTRIBUTE ? false : false);
+		
+		if (r == 8 && !useWH) {
+			checkShadowHolderSizes(shadowHolders);
+		}
 		
 		if (shadowHolders.size() < r || shadowHolders.size() < n) {
 			System.err.println("Not enough shadows.");
@@ -156,6 +163,18 @@ public class Main {
 			new BmpImage(secretPath.toString(), bytes, useWH, shadow).save();
 		} catch (IOException e) {
 			System.err.println("Couldn't save secret image.");
+			System.exit(1);
+		}
+	}
+	
+
+	private static void checkShadowHolderSizes(List<BmpImage> shadowHolders) {
+		int width = shadowHolders.get(0).getWidth();
+		int height = shadowHolders.get(0).getHeight();
+		if (shadowHolders.stream()
+			.filter(shadow -> shadow.getWidth() != width || shadow.getHeight() != height)
+			.count() != 0) {
+			System.err.println("Shadows should have same dimension.");
 			System.exit(1);
 		}
 	}
