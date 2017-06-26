@@ -2,7 +2,7 @@ group 'ar.edu.itba.cripto'
 version '1.0-SNAPSHOT'
 
 apply plugin: 'java'
-apply plugin: 'findbugs'
+//apply plugin: 'findbugs'
 apply plugin: 'checkstyle'
 
 sourceCompatibility = 1.8
@@ -12,9 +12,20 @@ repositories {
     mavenCentral()
 }
 
+buildscript {
+    repositories {
+        jcenter()
+    }
+    dependencies {
+        classpath 'com.github.jengelman.gradle.plugins:shadow:2.0.1'
+    }
+}
+
+apply plugin: 'com.github.johnrengelman.shadow'
+
 jar {
     manifest {
-        attributes 'Main-Class': 'Main'
+        attributes 'Main-Class': 'main.Main'
     }
 }
 
