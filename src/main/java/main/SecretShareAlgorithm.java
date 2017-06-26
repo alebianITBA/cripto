@@ -24,7 +24,7 @@ public class SecretShareAlgorithm {
 	}
 
 	public SecretShareAlgorithm(short seed) {
-		this.seed = seed;
+		this.seed = (short) (seed & 0xFFFF);
 		this.randomTable = new RandomTable(seed);
 	}
 
@@ -68,7 +68,6 @@ public class SecretShareAlgorithm {
 		int shadowSize = randomized.length / r;
 		byte[][] shadows = new byte[n][shadowSize];
 		int processedIdx = 0;
-
 		// We use j in this for to represent the j-th section like the paper
 		for (int j = 0; j < shadowSize; j++) {
 			byte[] section = Arrays.copyOfRange(randomized, processedIdx,
@@ -93,7 +92,6 @@ public class SecretShareAlgorithm {
 
 			processedIdx += r;
 		}
-
 		return shadows;
 	}
 
@@ -111,7 +109,7 @@ public class SecretShareAlgorithm {
 	private static int evaluate(byte[] coefficients, int x) {
 		int value = 0;
 		for (int i = 0; i < coefficients.length; i++) {
-			value += coefficients[i] * Math.pow(x, i);
+			value += (coefficients[i] & 0xFF) * Math.pow(x, i);
 		}
 		return value % MODULO;
 	}
@@ -119,7 +117,7 @@ public class SecretShareAlgorithm {
 	private static void updateCoeffs(byte[] coefficients) {
 		for (int i = 0; i < coefficients.length; i++) {
 			if (coefficients[i] != 0) {
-				coefficients[i]--;
+				coefficients[i] = (byte) ((coefficients[i] & 0xFF) - 1);
 				break;
 			}
 		}

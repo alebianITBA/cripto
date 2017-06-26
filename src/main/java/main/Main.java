@@ -22,28 +22,29 @@ public class Main {
 		int r = parser.getMinimumShadows();
 		int n = parser.getTotalShadows();
 		Path secretPath = parser.getSecretPath();
+		boolean useWH = parser.useWH();
 
 		List<BmpImage> shadowHolders = getShadowHolders(parser.getDir(),
 				parser.getOperation() == Operation.DISTRIBUTE ? false : false);
 		
-		if (shadowHolders.size() < r) {
+		if (shadowHolders.size() < r || shadowHolders.size() < n) {
 			System.err.println("Not enough shadows.");
 			System.exit(1);
 		}
 		
 		switch (parser.getOperation()) {
 		case DISTRIBUTE:
-			distribute(secretPath, shadowHolders, r, n);
+			distribute(secretPath, shadowHolders, r, n, useWH);
 			break;
 		case RETRIEVE:
-			retrieve(secretPath, shadowHolders, r);
+			retrieve(secretPath, shadowHolders, r, useWH);
 			break;
 		default:
 			throw new IllegalStateException("Unknown operation.");
 		}
 	}
 
-	private static void distribute(Path secretPath, List<BmpImage> shadowHolders, int r, int n) {
+	private static void distribute(Path secretPath, List<BmpImage> shadowHolders, int r, int n, boolean useWH) {
 		BmpImage secret = readSecretImage(secretPath);
 		byte[] secretPixels = Arrays.copyOf(secret.getPixels(),
 				(int) (Math.ceil(secret.getImageSize() / r) * r));
@@ -53,27 +54,30 @@ public class Main {
 		byte[][] shadows = secretShareAlg.getShadows(r, n, secretPixels);
 		List<BmpImage> realShadows = new ArrayList<>();
 		for (int i = 0; i < shadows.length; i++) {
-			realShadows.add(shadowHolders.get(i).hideBytes(shadows[i])
+			BmpImage realShadow = shadowHolders.get(i).hideBytes(shadows[i])
 					.hideSeed(secretShareAlg.getSeed())
-					.hideShadowNumber((short) (i + 1)));
+					.hideShadowNumber((short) (i + 1));
+			if (useWH) {
+				realShadow = realShadow.hideHeightNumber(secret.getHeight())
+						.hideWidthNumber(secret.getWidth());
+			}
+			realShadows.add(realShadow);
 		}
 		saveShadows(realShadows);
 	}
 	
-	private static void retrieve(Path secretPath, List<BmpImage> shadowHolders, int r) {
+	private static void retrieve(Path secretPath, List<BmpImage> shadowHolders, int r, boolean useWH) {
 		List<Shadow> shadows = shadowHolders.stream()
 				.map(shadow -> {
 					byte[] content = shadow.getHiddenBytes(shadow.getImageSize() / 8);
 					int number = shadow.getShadowNumber();
-					System.out.println(number);
 					short seed = shadow.getSeed();
-					System.out.println(seed);
 					return new Shadow(content, number, seed);
 				})
 				.collect(Collectors.toList());
 		SecretShareAlgorithm secretShareAlg = new SecretShareAlgorithm(shadows.get(0).getSeed());
 		byte[] bytes = secretShareAlg.getImage(shadows, r);
-		saveSecret(secretPath, bytes);
+		saveSecret(secretPath, bytes, useWH, shadowHolders.get(0));
 	}
 	
 	private static void checkShadowHoldersSize(List<BmpImage> shadowHolders, int shadowSize) {
@@ -147,16 +151,12 @@ public class Main {
 			}});
 	}
 	
-	private static void saveSecret(Path secretPath, byte[] bytes) {
+	private static void saveSecret(Path secretPath, byte[] bytes, boolean useWH, BmpImage shadow) {
 		try {
-//			System.out.println(Arrays.toString(bytes));
-			new BmpImage(secretPath.toString(), bytes).save();
+			new BmpImage(secretPath.toString(), bytes, useWH, shadow).save();
 		} catch (IOException e) {
 			System.err.println("Couldn't save secret image.");
 			System.exit(1);
-//		} catch (BmpImageException e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
 		}
 	}
 }

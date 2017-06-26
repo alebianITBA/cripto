@@ -16,57 +16,43 @@ public class BmpImage {
 	
 	private final String name;
 	private final byte[] arr;
-	private final int size;
-	private final int width;
-	private final int height;
-	private final int offset;
-	private final int imageSize;
+	private int size;
+	private int width;
+	private int height;
+	private int offset;
+	private int imageSize;
 	private final boolean reservedShouldBeEmpty;
 	
-	private static byte[] header;
-
-	public BmpImage(String name, byte[] pixels) {
-//		int headerSize = 40;
-//		this.name = name;
-//		this.imageSize = pixels.length;
-//		this.reservedShouldBeEmpty = true;
-//		this.size = 1078 + pixels.length;
-//		ByteBuffer sizeBuffer = ByteBuffer.allocate(4);
-//		sizeBuffer.putInt(Integer.reverseBytes(size));
-//		this.offset = 1078;
-//		ByteBuffer offsetBuffer = ByteBuffer.allocate(4);
-//		offsetBuffer.putInt(Integer.reverseBytes(offset));
-//		ByteBuffer headerSizeBuffer = ByteBuffer.allocate(4);
-//		headerSizeBuffer.putInt(Integer.reverseBytes(headerSize));	
-//		this.width = 300;
-//		ByteBuffer widthBuffer = ByteBuffer.allocate(4);
-//		widthBuffer.putInt(Integer.reverseBytes(width));	
-//		this.height = 300;
-//		ByteBuffer heightBuffer = ByteBuffer.allocate(4);
-//		heightBuffer.putInt(Integer.reverseBytes(height));	
-//		ByteBuffer bitsPerPixelBuffer = ByteBuffer.allocate(2);
-//		bitsPerPixelBuffer.putShort(Short.reverseBytes((short) 8));	
-//		this.arr = new byte[headerSize + pixels.length];
-//		System.arraycopy(new byte[]{'B', 'M'}, 0, arr, 0, 2);
-//		System.arraycopy(sizeBuffer.array(), 0, arr, 2, 4);
-//		System.arraycopy(offsetBuffer.array(), 0, arr, 10, 4);
-//		System.arraycopy(headerSizeBuffer.array(), 0, arr, 14, 4);
-//		System.arraycopy(widthBuffer.array(), 0, arr, 18, 4);
-//		System.arraycopy(heightBuffer.array(), 0, arr, 22, 4);
-//		System.arraycopy(bitsPerPixelBuffer.array(), 0, arr, 28, 2);
-//		System.arraycopy(pixels, 0, arr, headerSize, pixels.length);
-//		System.out.println(Arrays.toString(Arrays.copyOf(arr, headerSize)));
-//		System.out.println(getInt(arr, 2, 6));
-		this.height = 0;
-		this.width = 0;
-		this.imageSize = 0;
+	public BmpImage(String name, byte[] pixels, boolean useWH, BmpImage shadow) {
 		this.name = name;
-		this.offset = 0;
 		this.reservedShouldBeEmpty = false;
-		this.size = 0;
-		this.arr = new byte[BmpImage.header.length + pixels.length];
-		System.arraycopy(BmpImage.header, 0, arr, 0, BmpImage.header.length);
-		System.arraycopy(pixels, 0, arr, BmpImage.header.length, pixels.length);
+		byte[] header;
+		if (useWH) {
+			header = new byte[1078];
+			System.arraycopy(shadow.getByteArray(), 0, header, 0, 54);
+			this.width = shadow.getHiddenWidth();
+			this.height = shadow.getHiddenHeight();
+			this.size = 1078 + pixels.length;
+			this.offset = 1078;
+			ByteBuffer sizeBuffer = ByteBuffer.allocate(4).putInt(Integer.reverseBytes(size));
+			ByteBuffer offsetBuffer = ByteBuffer.allocate(4).putInt(Integer.reverseBytes(offset));
+			ByteBuffer headerSizeBuffer = ByteBuffer.allocate(4).putInt(Integer.reverseBytes(40));	
+			ByteBuffer widthBuffer = ByteBuffer.allocate(4).putInt(Integer.reverseBytes(width));	
+			ByteBuffer heightBuffer = ByteBuffer.allocate(4).putInt(Integer.reverseBytes(height));	
+			byte[] palette = getColorPalette();
+			System.arraycopy(sizeBuffer.array(), 0, header, 2, 4);
+			System.arraycopy(offsetBuffer.array(), 0, header, 10, 4);
+			System.arraycopy(headerSizeBuffer.array(), 0, header, 14, 4);
+			System.arraycopy(widthBuffer.array(), 0, header, 18, 4);
+			System.arraycopy(heightBuffer.array(), 0, header, 22, 4);
+			System.arraycopy(palette, 0, header, 54, palette.length);
+		} else {
+			header = new byte[shadow.getOffset()];
+			header = Arrays.copyOfRange(shadow.getByteArray(), 0, shadow.getOffset());
+		}
+		this.arr = new byte[header.length + pixels.length];
+		System.arraycopy(header, 0, arr, 0, header.length);
+		System.arraycopy(pixels, 0, arr, header.length, pixels.length);
 	}
 	
 	public BmpImage(String name, byte[] arr, boolean reservedShouldBeEmpty) throws BmpImageException {
@@ -74,7 +60,6 @@ public class BmpImage {
 		this.arr = arr;
 		this.reservedShouldBeEmpty = reservedShouldBeEmpty;
 		int headerSize = getInt(arr, 14, 18);
-		System.out.println(Arrays.toString(Arrays.copyOf(arr, 54)));
 		if (headerSize <= 12) {
 			throw new BmpImageException("Header size too small: " + headerSize);
 		}
@@ -85,9 +70,12 @@ public class BmpImage {
 		if (reservedShouldBeEmpty && getInt(arr, 6, 10) != 0) {
 			throw new BmpImageException("Reserved bytes are already used.");
 		}
+		initVariables();
+	}
+	
+	private void initVariables() {
 		this.size = getInt(arr, 2, 6);
 		this.offset = getInt(arr, 10, 14);
-		BmpImage.header = Arrays.copyOfRange(arr, 0, offset);
 		this.width = getInt(arr, 18, 22);
 		this.height = getInt(arr, 22, 26);
 		this.imageSize = this.size - this.offset;
@@ -125,7 +113,7 @@ public class BmpImage {
 		byte[] arrCopy = Arrays.copyOf(arr, arr.length);
 		for (int i = 0; i < bytes.length; i++) {
 			for (int b = 0; b < 8; b++) {
-				byte bitValue = (byte) ((bytes[i] & (1 << b)) >> b);
+				byte bitValue = (byte) ((bytes[i] & (1 << (8 - b - 1))) >> (8 - b - 1));
 				arrCopy[this.offset + i * 8 + b] &= (0xFF - 1);
 				arrCopy[this.offset + i * 8 + b] |= bitValue;
 			}
@@ -143,17 +131,49 @@ public class BmpImage {
 		for (int i = 0; i < length; i++) {
 			for (int b = 0; b < 8; b++) {
 				byte bitValue = (byte) (arr[this.offset + i * 8 + b] & 1);
-				bytes[i] |= bitValue << b;
+				bytes[i] |= bitValue << (8 - b - 1);
 			}
 		}
 		return bytes;
 	}
 
 	public BmpImage hideSeed(short seed) {
+		return hideShort(seed, 6);
+	}
+	
+	public short getSeed() {
+		return getShort(arr, 6, 8);
+	}
+	
+	public BmpImage hideShadowNumber(short k) {
+		return hideShort(k, 8);
+	}
+	
+	public short getShadowNumber() {
+		return getShort(arr, 8, 10);
+	}
+	
+	public BmpImage hideWidthNumber(int width) {
+		return hideInt(width, 38);
+	}
+	
+	public int getHiddenWidth() {
+		return getInt(arr, 38, 42);
+	}
+	
+	public BmpImage hideHeightNumber(int height) {
+		return hideInt(height, 42);
+	}
+	
+	public int getHiddenHeight() {
+		return getInt(arr, 42, 46);
+	}
+	
+	private BmpImage hideInt(int v, int start) {
 		byte[] arrCopy = Arrays.copyOf(arr, arr.length);
-		ByteBuffer buffer = ByteBuffer.allocate(2);
-		buffer.putShort(Short.reverseBytes(seed));
-		System.arraycopy(buffer.array(), 0, arrCopy, 6, 2);
+		ByteBuffer buffer = ByteBuffer.allocate(4);
+		buffer.putInt(Integer.reverseBytes(v));
+		System.arraycopy(buffer.array(), 0, arrCopy, start, 4);
 		try {
 			return new BmpImage(this.name, arrCopy, false);
 		} catch (BmpImageException e) {
@@ -162,25 +182,17 @@ public class BmpImage {
 		}
 	}
 	
-	public short getSeed() {
-		return getShort(arr, 6, 8);
-	}
-	
-	public BmpImage hideShadowNumber(short k) {
+	private BmpImage hideShort(short v, int start) {
 		byte[] arrCopy = Arrays.copyOf(arr, arr.length);
 		ByteBuffer buffer = ByteBuffer.allocate(2);
-		buffer.putShort(Short.reverseBytes(k));
-		System.arraycopy(buffer.array(), 0, arrCopy, 8, 2);
+		buffer.putShort(Short.reverseBytes(v));
+		System.arraycopy(buffer.array(), 0, arrCopy, start, 2);
 		try {
-			return new BmpImage("shadows/" + this.name, arrCopy, false);
+			return new BmpImage(this.name, arrCopy, false);
 		} catch (BmpImageException e) {
 			throw new IllegalStateException(
 					"Cloned BMP should be legal BMP image: " + e.getMessage());
 		}
-	}
-	
-	public short getShadowNumber() {
-		return getShort(arr, 8, 10);
 	}
 	
 	private int getInt(byte[] arr, int start, int end) {
@@ -226,7 +238,7 @@ public class BmpImage {
 	}
 	
 	public void save() throws IOException {
-		Files.write(Paths.get(name), this.arr,  StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.CREATE);
+		Files.write(Paths.get(name), this.arr, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.CREATE);
 	}
 
 	public BmpImage clone() {
@@ -242,5 +254,15 @@ public class BmpImage {
 	public String toString() {
 		return "BmpImage [size=" + size + ", width=" + width + ", height="
 				+ height + ", offset=" + offset + "]";
+	}
+	
+	
+	private static byte[] getColorPalette() {
+		byte[] palette = new byte[1024];
+		for (int i = 0; i < 256; i++) {
+			byte b = (byte) i;
+			System.arraycopy(new byte[]{b, b, b, 0}, 0, palette, i * 4, 4);
+		}
+		return palette;
 	}
 }

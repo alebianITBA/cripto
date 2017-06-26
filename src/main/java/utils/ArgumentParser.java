@@ -19,6 +19,7 @@ public class ArgumentParser {
 	private static final String SECRET_ARG = "secret";
 	private static final String MINIMUM_SHADOWS_ARG = "k";
 	private static final String TOTAL_SHADOWS_ARG = "n";
+	private static final String HIDE_WH_ARG = "wh";
 	private static final String DIR_ARG = "dir";
 
 	private Options distributeOptions;
@@ -29,6 +30,7 @@ public class ArgumentParser {
 	private Integer totalShadows;
 	private Path secretFile;
 	private Path dir;
+	private boolean useWH;
 
 	public ArgumentParser() {
 		createOptions();
@@ -69,6 +71,11 @@ public class ArgumentParser {
 
 		options.addOption(Option.builder().argName(DIR_ARG).longOpt(DIR_ARG)
 				.desc("Directory to work on.").hasArg().required(false).build());
+		
+		options.addOption(Option.builder().argName(HIDE_WH_ARG)
+				.longOpt(HIDE_WH_ARG)
+				.desc("If set, it will hide or retrieve if hidden the width and height of the image.")
+				.hasArg(false).required(false).build());
 	}
 
 	public Operation getOperation() {
@@ -89,6 +96,10 @@ public class ArgumentParser {
 
 	public Path getDir() {
 		return dir;
+	}
+	
+	public boolean useWH() {
+		return useWH;
 	}
 
 	public void parse(String[] args) throws ArgsParserException {
@@ -121,6 +132,7 @@ public class ArgumentParser {
 			}
 			this.secretFile = Paths.get(cmd.getOptionValue(SECRET_ARG));
 			setMinimumShadows(cmd);
+			setUseWH(cmd);
 			checkArgs(cmd);
 		} catch (ParseException e) {
 			throw new ArgsParserException(e.getMessage());
@@ -133,11 +145,12 @@ public class ArgumentParser {
 			cmd = new DefaultParser().parse(this.retrieveOptions, args);
 			this.secretFile = Paths.get(cmd.getOptionValue(SECRET_ARG));
 			setMinimumShadows(cmd);
+			setUseWH(cmd);
 			setDir(cmd);	
 			this.totalShadows = countImagesOnDir();
 			checkArgs(cmd);
 		} catch (ParseException e) {
-			e.printStackTrace();
+			throw new ArgsParserException(e.getMessage());
 		}
 
 	}
@@ -147,10 +160,10 @@ public class ArgumentParser {
 			throw new ArgsParserException(
 					"n should be lower than or equal to " + (Short.MAX_VALUE - 1));
 		}
-		if (minimumShadows > totalShadows || minimumShadows <= 0
-				|| totalShadows <= 0) {
+		if (minimumShadows > totalShadows || minimumShadows < 2
+				|| totalShadows < 2) {
 			throw new ArgsParserException(
-					"k <= n, n > 0, k > 0 requirement not met.");
+					"k <= n, n >= 2, k >= 2 requirement not met.");
 		}
 		return true;
 	}
@@ -173,6 +186,14 @@ public class ArgumentParser {
 			return (int) Files.list(this.dir).filter(f -> f.getFileName().toString().endsWith(".bmp")).count();
 		} catch (IOException e) {
 			throw new ArgsParserException("Error when reading from dir: " + this.dir);
+		}
+	}
+	
+	private void setUseWH(CommandLine cmd) {
+		if (cmd.hasOption(HIDE_WH_ARG)) {
+			useWH = true;
+		} else {
+			useWH = false;
 		}
 	}
 }
